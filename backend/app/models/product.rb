@@ -26,7 +26,8 @@ class Product < ApplicationRecord
 
   def related
     if related_products.blank?
-      Product.where.not(id: id).order('RAND()').limit(3)
+      random_fn = ActiveRecord::Base.connection.adapter_name.downcase.include?('sqlite') ? 'RANDOM()' : 'RAND()'
+      Product.where.not(id: id).order(Arel.sql(random_fn)).limit(3)
     else
       Product.where(id: related_products.split(',')).order(:name)
     end
