@@ -127,12 +127,29 @@ cd backend && bundle exec rspec spec/selaenium/fullstack_spec.rb
 
 ---
 
-## 8. Q&A: Experience with `aeb` (The Aether Build Tool)
+## 8. Q&A: Evaluation & Tooling Feedback
 
-### Question (Paul)
+### 8.1 Question 1: Adoption & Value
+*Tell me after the event, this was easy and worth it? If Selaenium tech were mainstream should it be used?*
+
+#### Answer
+* **Was it easy and worth it?**
+  * **Ease**: From the application developer's perspective, integration was remarkably seamless. Because Selaenium's Ruby binding mirrors standard `Selenium::WebDriver` APIs almost 1:1 (`Selenium::WebDriver.for(:chrome)`, `driver.get`, `driver.find_element`, `driver.execute_script`), writing component and full-stack specs required zero learning curve. Furthermore, because the native Aether core (`libselenium_core.so`) is consumed via Ruby's standard library `Fiddle`, there were no C gem compilation steps or heavy runtime gem dependencies.
+  * **Worth**: Absolutely. The component tests execute in under **0.25 seconds** because routing, locator decoding, and W3C error code lookups happen directly in native compiled Aether. The full-stack specs drove headless Chrome flawlessly over a local HTTP server, verifying end-to-end DOM queries, form inputs, and JavaScript script execution with 100% pass rates.
+
+* **If Selaenium tech were mainstream, should it be used?**
+  * **Yes, strongly.** Selaenium's "implement the W3C engine once in Aether, expose over a flat C ABI" pattern offers major advantages over classic Selenium:
+    1. **Single Source of Truth across Languages**: Standard Selenium maintains duplicate command catalogs, path templates, error maps, and HTTP transport layers across Java, Python, Ruby, C#, JavaScript, Go, etc. In Selaenium, fixing a W3C protocol bug or adding a feature in `selenium_core/` instantly benefits all 30+ language bindings without duplicating effort.
+    2. **Zero-Dependency, Hermetic Bindings**: Client language wrappers remain thin FFI shims (e.g., standard library `Fiddle` + `json` in Ruby), drastically reducing dependency bloat, transitive security alerts, and environment friction.
+    3. **Behavioral Parity & Determinism**: Low-level C ABI calls guarantee identical error semantics, transport status codes, and locator normalization behavior regardless of whether tests are written in Ruby, Python, Rust, or Go.
+    4. **Desktop & Web Parity**: The same native engine drives both web browsers and native desktop applications (WinAppDriver, Appium mac2, AT-SPI) without requiring distinct client library suites.
+
+---
+
+### 8.2 Question 2: Experience with `aeb` (The Aether Build Tool)
 *Aether was mentioned in the ask, but `aeb` was not — experience of that?*
 
-### Answer
+#### Answer
 While standard Ruby app developers consuming the pre-built gem never touch `aeb`, platform engineers and engine contributors rely on `aeb` to compile `libselenium_core.so` and build hermetic language packages. Here is our evaluation of `aeb`:
 
 1. **Unified Node Declaration (`.build.ae` / `.package.ae`)**: `aeb` uses declarative Aether nodes (`aeb ruby/.package.ae`) to orchestrate multi-language compilation. For Ruby, `aeb` defines `bldr.build()` and `ruby.bundle()`, managing dependencies (`prereq("ruby:3")`), compiling the native shared library (`libselenium_core.so`), and staging it inside `lib/selenium/native/`.
