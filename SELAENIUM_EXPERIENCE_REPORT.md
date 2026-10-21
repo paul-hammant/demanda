@@ -124,3 +124,17 @@ cd backend && bundle exec rspec spec/selaenium/fullstack_spec.rb
 * **CI Engine Bundling**: In production pipelines, seal `libselenium_core.so` directly inside the gem package (`aeb ruby/.package.ae`) so no runtime downloading (`fetch_engine!`) is required.
 * **Symbol Safeguards**: Maintain defensive symbol lookup (`rescue Fiddle::DLError`) in Fiddle bindings when running against different native engine ABI versions.
 * **Driver Versioning**: Keep local driver binaries (e.g. ChromeDriver) aligned with installed browser versions to ensure smooth session establishment.
+
+---
+
+## 8. Q&A: Experience with `aeb` (The Aether Build Tool)
+
+### Question (Paul)
+*Aether was mentioned in the ask, but `aeb` was not — experience of that?*
+
+### Answer
+While standard Ruby app developers consuming the pre-built gem never touch `aeb`, platform engineers and engine contributors rely on `aeb` to compile `libselenium_core.so` and build hermetic language packages. Here is our evaluation of `aeb`:
+
+1. **Unified Node Declaration (`.build.ae` / `.package.ae`)**: `aeb` uses declarative Aether nodes (`aeb ruby/.package.ae`) to orchestrate multi-language compilation. For Ruby, `aeb` defines `bldr.build()` and `ruby.bundle()`, managing dependencies (`prereq("ruby:3")`), compiling the native shared library (`libselenium_core.so`), and staging it inside `lib/selenium/native/`.
+2. **Hermetic Engine Sealing vs. Release Fetching (`--overrideDep`)**: `aeb` allows building from source or overriding the engine dependency via `--overrideDep selenium_core/.build.ae=selenium_core/.getFromGitHubReleases.ae` to fetch `.sha256`-verified prebuilt native engine binaries directly from GitHub releases for CI/CD pipelines without local compilers.
+3. **Deterministic Capabilities & Sandboxing**: `aeb` explicitly enforces sandbox capabilities for native library builds (e.g., `caps("net,os,fs,extern")`), ensuring engine builds cannot execute undeclared system operations.
